@@ -48,9 +48,19 @@ server.route({
     console.log(req.payload);
 
     pool.query('SELECT * FROM ' + SCHEMA_NAME + '.' + DRIVER_TABLE, (err, result) => {
-      result.rows.forEach( val => console.log(val));
+      var rowsAsString = "";
+      
+      if (err) {
+        return reply("error:" + err);
+      }
 
-      reply('get received at carpool' + JSON.stringify(result.rows[0]));
+      if (result !== undefined && result.rows !== undefined) {
+
+        result.rows.forEach( val => console.log(val));
+        rowsAsString = JSON.stringify(result.rows[0]);
+      }
+
+      reply('get received at carpool' + rowsAsString);
     });
   }
 });
@@ -88,7 +98,11 @@ server.route({
     //          'Notes on driver', '1', '2016-09-21T00:48:32.055Z', 'SYSTEM', '2016-09-21T00:48:32.055Z', 'SYSTEM']
 
     // text: 
-    'INSERT INTO ' + SCHEMA_NAME + '.' + DRIVER_TABLE + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
+    'INSERT INTO ' + SCHEMA_NAME + '.' + DRIVER_TABLE
+      // + ' (TimeStamp)'
+
+      + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
+      // + ' values($1)',
     // values: 
     [
               // '2016-09-01T00:00:00.000Z'
