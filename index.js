@@ -39,7 +39,13 @@ else {
 
 server.connection({ 
   port: appPort, 
-  routes: { cors: true } 
+  routes: { 
+    cors: true 
+    // cors: {
+    //           origin: ['*']
+    //           // , additionalHeaders: ['cache-control', 'x-requested-with']
+    //       }
+  } 
 });
 
 var rowId = 8;
