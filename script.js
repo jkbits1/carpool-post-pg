@@ -4,6 +4,8 @@ function sendForm() {
 
   var formData = new FormData();
 
+  var remoteUrl = "http://localhost:8000/driver";
+
   formData.append("IPAddress", "0.0.0.1");
   formData.append("DriverCollectionZIP", 60004); 
   formData.append("DriverCollectionRadius", 21); 
@@ -46,6 +48,6 @@ function sendForm() {
   // formData.append("webmasterfile", blob);
 
   var request = new XMLHttpRequest();
-  request.open("POST", "http://localhost:8000/driver");
+  request.open("POST", remoteUrl);
   request.send(formData);
 }
