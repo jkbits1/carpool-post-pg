@@ -10,6 +10,7 @@ const pool = new Pool(config);
 const server = new Hapi.Server();
 
 const DEFAULT_PORT  = process.env.PORT || 8000;
+
 const SCHEMA_NAME   = '"STAGE"';
 const DRIVER_TABLE  = '"WEBSUBMISSION_DRIVER"';
 const RIDER_TABLE   = '"WEBSUBMISSION_RIDER"';
@@ -26,23 +27,13 @@ server.connection({
   } 
 });
 
-var rowId = 8;
-
-function dbGetQueryString () {
-  return 'SELECT * FROM ' + SCHEMA_NAME + '.' + DRIVER_TABLE;
-}
-
-function dbGetInsertClause (tableName) {
-  return 'INSERT INTO ' + SCHEMA_NAME + '.' + tableName;
-}
-
 server.route({
   method: 'GET',
   path: '/',
   handler: (req, reply) => {
 
     pool.query(dbGetQueryString(), (err, result) => {
-      var rowsAsString = "";
+      var firstRowAsString = "";
 
       if (err) {
         return reply("error: " + err);
@@ -51,10 +42,10 @@ server.route({
       if (result !== undefined && result.rows !== undefined) {
 
         // result.rows.forEach( val => console.log(val));
-        rowsAsString = JSON.stringify(result.rows[0]);
+        firstRowAsString = JSON.stringify(result.rows[0]);
       }
 
-      reply('get received at carpool' + rowsAsString);
+      reply('get received at carpool' + firstRowAsString);
     });
   }
 });
@@ -66,11 +57,26 @@ server.route({
     var payload = req.payload;
 
     console.log("payload: " + payload);
-    console.log("zip: " + payload.DriverCollectionZIP);
+    console.log("driver zip: " + payload.DriverCollectionZIP);
 
-    insertDriverData(payload, pool);   
+    dbInsertData(payload, pool, dbGetInsertDriverString, getDriverPayloadAsArray);
 
-    reply('row inserted');
+    reply('driver row inserted');
+  }
+});
+
+server.route({
+  method: 'POST',
+  path: '/' + RIDER_ROUTE,
+  handler: (req, reply) => {
+    var payload = req.payload;
+
+    console.log("payload: " + payload);
+    console.log("rider zip: " + payload.RiderCollectionZIP);
+
+    dbInsertData(payload, pool, dbGetInsertRiderString, getRiderPayloadAsArray);
+
+    reply('rider row inserted');
   }
 });
 
@@ -87,6 +93,111 @@ pool.on('error', (err, client) => {
     console.error("db err" + err);
   } 
 });
+
+function dbInsertData(payload, pool, fnInsertString, fnPayloadArray) {
+    pool.query(
+      fnInsertString(),
+      fnPayloadArray(payload)
+    )
+    .then(result => {
+      if (result !== undefined) {
+        console.log('insert: ', result)
+      }
+      else {
+        console.error('insert made')
+      }
+    })
+    .catch(e => {
+      if (e !== undefined && e.message !== undefined && e.stack !== undefined) {
+        console.error('query error', e.message, e.stack)
+      }
+      else {
+        console.error('query error.')
+      }
+    });
+}
+
+function dbGetQueryString () {
+  return 'SELECT * FROM ' + SCHEMA_NAME + '.' + DRIVER_TABLE;
+}
+
+function dbGetInsertClause (tableName) {
+  return 'INSERT INTO ' + SCHEMA_NAME + '.' + tableName;
+}
+
+function dbGetInsertDriverString() {
+  return dbGetInsertClause(DRIVER_TABLE)
+    + ' (' // "TimeStamp",  
+    + '  "IPAddress", "DriverCollectionZIP", "DriverCollectionRadius", "AvailableDriveTimesJSON"' 
+    + ', "DriverCanLoadRiderWithWheelchair", "SeatCount", "DriverHasInsurance", "DriverInsuranceProviderName", "DriverInsurancePolicyNumber"'
+    + ', "DriverLicenseState", "DriverLicenseNumber", "DriverFirstName", "DriverLastName", "PermissionCanRunBackgroundCheck"'
+    + ', "DriverEmail", "DriverPhone", "DriverAreaCode", "DriverEmailValidated", "DriverPhoneValidated"'
+    + ', "DrivingOnBehalfOfOrganization", "DrivingOBOOrganizationName", "RidersCanSeeDriverDetails", "DriverWillNotTalkPolitics", "ReadyToMatch"'
+    + ', "PleaseStayInTouch"'  
+    + ')'
+
+    + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
+    + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)' //-- $26
+}
+
+// CREATE TABLE "STAGE"."WEBSUBMISSION_RIDER"
+// (
+//   "CreatedTimeStamp" timestamp without time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+//   "IPAddress" character varying(20),
+//   "RiderFirstName" character varying(255) NOT NULL,
+//   "RiderLastName" character varying(255) NOT NULL,
+//   "RiderEmail" character varying(255),
+//   "RiderPhone" character varying(20),
+//   "RiderAreaCode" integer,
+//   "RiderEmailValidated" boolean NOT NULL DEFAULT false,
+//   "RiderPhoneValidated" boolean NOT NULL DEFAULT false,
+//   "RiderVotingState" character(2) NOT NULL,
+//   "RiderCollectionZIP" character varying(5) NOT NULL,
+//   "RiderDropOffZIP" character varying(5) NOT NULL,
+//   "AvailableRideTimesJSON" character varying(2000),
+//   "WheelchairCount" integer,
+//   "NonWheelchairCount" integer,
+//   "TotalPartySize" integer,
+//   "TwoWayTripNeeded" boolean NOT NULL DEFAULT false,
+//   "RiderPreferredContactMethod" integer,
+//   "RiderIsVulnerable" boolean NOT NULL DEFAULT false,
+//   "DriverCanContactRider" boolean NOT NULL DEFAULT false,
+//   "RiderWillNotTalkPolitics" boolean NOT NULL DEFAULT false,
+//   "ReadyToMatch" boolean NOT NULL DEFAULT false,
+//   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
+// )
+// WITH (
+//   OIDS=FALSE
+// );
+// ALTER TABLE "STAGE"."WEBSUBMISSION_RIDER"
+//   OWNER TO carpool_admins;
+// GRANT ALL ON TABLE "STAGE"."WEBSUBMISSION_RIDER" TO carpool_admins;
+// GRANT INSERT ON TABLE "STAGE"."WEBSUBMISSION_RIDER" TO carpool_web_role;
+// GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE "STAGE"."WEBSUBMISSION_RIDER" TO carpool_role;
+
+
+function dbGetInsertRiderString() {
+  return dbGetInsertClause(RIDER_TABLE)
+    + ' (' // "CreatedTimeStamp",    
+    + '  "IPAddress", "RiderFirstName", "RiderLastName", "RiderEmail"'       
+    + ', "RiderPhone", "RiderAreaCode", "RiderEmailValidated", "RiderPhoneValidated", "RiderVotingState"'
+    + ', "RiderCollectionZIP", "RiderDropOffZIP", "AvailableRideTimesJSON", "WheelchairCount", "NonWheelchairCount"'
+    + ', "TotalPartySize", "TwoWayTripNeeded", "RiderPreferredContactMethod", "RiderIsVulnerable", "DriverCanContactRider"'
+    + ', "RiderWillNotTalkPolitics", "ReadyToMatch", "PleaseStayInTouch"' 
+    + ')'
+    + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
+    + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)' // , $23 
+}
+
+function getRiderPayloadAsArray(payload) {
+  return [      
+        payload.IPAddress, payload.RiderFirstName, payload.RiderLastName, payload.RiderEmail
+      , payload.RiderPhone, payload.RiderAreaCode, payload.RiderEmailValidated, payload.RiderPhoneValidated, payload.RiderVotingState
+      , payload.RiderCollectionZIP, payload.RiderDropOffZIP, payload.AvailableRideTimesJSON, payload.WheelchairCount, payload.NonWheelchairCount
+      , payload.TotalPartySize, payload.TwoWayTripNeeded, payload.RiderPreferredContactMethod, payload.RiderIsVulnerable, payload.DriverCanContactRider
+      , payload.RiderWillNotTalkPolitics, payload.ReadyToMatch, payload.PleaseStayInTouch 
+    ]
+}
 
 function getDriverPayloadAsArray(payload) {
   return [
@@ -134,46 +245,3 @@ function getDriverPayloadAsArray(payload) {
       //   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
     ]
 }
-
-function dbGetInsertDriverString() {
-  return dbGetInsertClause(DRIVER_TABLE)
-    + ' (' // "TimeStamp",  
-    + '  "IPAddress", "DriverCollectionZIP", "DriverCollectionRadius", "AvailableDriveTimesJSON"' 
-    + ', "DriverCanLoadRiderWithWheelchair", "SeatCount", "DriverHasInsurance", "DriverInsuranceProviderName", "DriverInsurancePolicyNumber"'
-    + ', "DriverLicenseState", "DriverLicenseNumber", "DriverFirstName", "DriverLastName", "PermissionCanRunBackgroundCheck"'
-    + ', "DriverEmail", "DriverPhone", "DriverAreaCode", "DriverEmailValidated", "DriverPhoneValidated"'
-    + ', "DrivingOnBehalfOfOrganization", "DrivingOBOOrganizationName", "RidersCanSeeDriverDetails", "DriverWillNotTalkPolitics", "ReadyToMatch"'
-    + ', "PleaseStayInTouch"'  
-    + ')'
-
-    + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
-    + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)' //-- $26
-}
-
-function insertDriverData(payload, pool) {
-
-    pool.query(
-      dbGetInsertDriverString(),
-      getDriverPayloadAsArray(payload)
-    )
-    .then(result => {
-      if (result !== undefined) {
-        console.log('insert: ', result)
-      }
-      else {
-        console.error('insert made')
-      }
-    })
-    .catch(e => {
-      if (e !== undefined && e.message !== undefined && e.stack !== undefined) {
-        console.error('query error', e.message, e.stack)
-      }
-      else {
-        console.error('query error.')
-      }
-    });
-}
-
-function insertRiderData(payload, pool) {
-}
-
