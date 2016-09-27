@@ -1,50 +1,25 @@
 'use strict';
 
-const Hapi = require('hapi');
+const Hapi    = require('hapi');
+const moment  = require('moment');
+var   Pool    = require('pg').Pool;
 
-var config = require('./dbInfo.js');
+const config  = require('./dbInfo.js');
 
-var moment = require('moment');
-
-var Pool = require('pg').Pool;
-var pool = new Pool(config);
-
+const pool = new Pool(config);
 const server = new Hapi.Server();
 
-const DEFAULT_PORT = 8000;
-const SCHEMA_NAME = '"STAGE"';
-const DRIVER_TABLE = '"WEBSUBMISSION_DRIVER"';
-const RIDER_TABLE = '"WEBSUBMISSION_RIDER"';
+const DEFAULT_PORT  = process.env.PORT || 8000;
+const SCHEMA_NAME   = '"STAGE"';
+const DRIVER_TABLE  = '"WEBSUBMISSION_DRIVER"';
+const RIDER_TABLE   = '"WEBSUBMISSION_RIDER"';
 
 var appPort = DEFAULT_PORT;
-
-if (process.env.NODE_ENV !== undefined) {
-  console.error("NODE_ENV exists");
-
-  if (process.env.NODE_ENV === "production") {
-    console.error("NODE_ENV = production");
-
-    appPort = process.env.PORT;
-  }
-  else if (process.env.NODE_ENV === "development") {
-    console.error("NODE_ENV = development");
-  }
-  else {
-    console.error("NODE_ENV = other");
-  }
-}
-else {
-  console.error("no NODE_ENV found");
-}
 
 server.connection({ 
   port: appPort, 
   routes: { 
     cors: true 
-    // cors: {
-    //           origin: ['*']
-    //           // , additionalHeaders: ['cache-control', 'x-requested-with']
-    //       }
   } 
 });
 
@@ -66,7 +41,7 @@ server.route({
 
       if (result !== undefined && result.rows !== undefined) {
 
-        result.rows.forEach( val => console.log(val));
+        // result.rows.forEach( val => console.log(val));
         rowsAsString = JSON.stringify(result.rows[0]);
       }
 
@@ -113,68 +88,67 @@ server.route({
     //          'Notes on driver', '1', '2016-09-21T00:48:32.055Z', 'SYSTEM', '2016-09-21T00:48:32.055Z', 'SYSTEM']
 
     // text: 
-    'INSERT INTO ' + SCHEMA_NAME + '.' + DRIVER_TABLE
-      + ' (' // "TimeStamp",  
-      + '  "IPAddress", "DriverCollectionZIP", "DriverCollectionRadius", "AvailableDriveTimesJSON"' 
-      + ', "DriverCanLoadRiderWithWheelchair", "SeatCount", "DriverHasInsurance", "DriverInsuranceProviderName", "DriverInsurancePolicyNumber"'
-      + ', "DriverLicenseState", "DriverLicenseNumber", "DriverFirstName", "DriverLastName", "PermissionCanRunBackgroundCheck"'
-      + ', "DriverEmail", "DriverPhone", "DriverAreaCode", "DriverEmailValidated", "DriverPhoneValidated"'
-      + ', "DrivingOnBehalfOfOrganization", "DrivingOBOOrganizationName", "RidersCanSeeDriverDetails", "DriverWillNotTalkPolitics", "ReadyToMatch"'
-      + ', "PleaseStayInTouch"'  
-      + ')'
+      'INSERT INTO ' + SCHEMA_NAME + '.' + DRIVER_TABLE
+        + ' (' // "TimeStamp",  
+        + '  "IPAddress", "DriverCollectionZIP", "DriverCollectionRadius", "AvailableDriveTimesJSON"' 
+        + ', "DriverCanLoadRiderWithWheelchair", "SeatCount", "DriverHasInsurance", "DriverInsuranceProviderName", "DriverInsurancePolicyNumber"'
+        + ', "DriverLicenseState", "DriverLicenseNumber", "DriverFirstName", "DriverLastName", "PermissionCanRunBackgroundCheck"'
+        + ', "DriverEmail", "DriverPhone", "DriverAreaCode", "DriverEmailValidated", "DriverPhoneValidated"'
+        + ', "DrivingOnBehalfOfOrganization", "DrivingOBOOrganizationName", "RidersCanSeeDriverDetails", "DriverWillNotTalkPolitics", "ReadyToMatch"'
+        + ', "PleaseStayInTouch"'  
+        + ')'
 
-      // + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
-      + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
-      + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)', //-- $26
-    // values: 
-    [
-              // '2016-09-01T00:00:00.000Z'
-              // timestampValue.toString(), '0.0.0.0', '60002', 20, 'after 10am'
-              // timestampValue.toString(), 
-              payload.IPAddress, payload.DriverCollectionZIP, payload.DriverCollectionRadius, payload.AvailableDriveTimesJSON
-              , 
-//   "TimeStamp" timestamp without time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-//   "IPAddress" character varying(20),
-//   "DriverCollectionZIP" character varying(5) NOT NULL,
-//   "DriverCollectionRadius" integer NOT NULL,
-//   "AvailableDriveTimesJSON" character varying(2000),
-              // false, 2, false, 'ill. ins', '1234'
-              payload.DriverCanLoadRiderWithWheelchair, payload.SeatCount, payload.DriverHasInsurance, payload.DriverInsuranceProviderName, payload.DriverInsurancePolicyNumber
-              , 
-//   "DriverCanLoadRiderWithWheelchair" boolean NOT NULL DEFAULT false,
-//   "SeatCount" integer DEFAULT 1,
-//   "DriverHasInsurance" boolean NOT NULL DEFAULT false,
-//   "DriverInsuranceProviderName" character varying(255),
-//   "DriverInsurancePolicyNumber" character varying(50),
-              // 'IL', '1234', 'fred', 'smith', false
-              payload.DriverLicenseState, payload.DriverLicenseNumber, payload.DriverFirstName, payload.DriverLastName, payload.PermissionCanRunBackgroundCheck
-              ,
-//   "DriverLicenseState" character(2),
-//   "DriverLicenseNumber" character varying(50),
-//   "DriverFirstName" character varying(255) NOT NULL,
-//   "DriverLastName" character varying(255) NOT NULL,
-//   "PermissionCanRunBackgroundCheck" boolean NOT NULL DEFAULT false,
-              // 'f@gmail.xxx', '555-123-4567', 555, false, false
-              payload.DriverEmail, payload.DriverPhone, payload.DriverAreaCode, payload.DriverEmailValidated, payload.DriverPhoneValidated
-              , 
-//   "DriverEmail" character varying(255),
-//   "DriverPhone" character varying(20),
-//   "DriverAreaCode" integer,
-//   "DriverEmailValidated" boolean NOT NULL DEFAULT false,
-//   "DriverPhoneValidated" boolean NOT NULL DEFAULT false,
-              // false, 'misc', false, false, false
-              payload.DrivingOnBehalfOfOrganization, payload.DrivingOBOOrganizationName, payload.RidersCanSeeDriverDetails, payload.DriverWillNotTalkPolitics, payload.ReadyToMatch
-              , 
-//   "DrivingOnBehalfOfOrganization" boolean NOT NULL DEFAULT false,
-//   "DrivingOBOOrganizationName" character varying(255),
-//   "RidersCanSeeDriverDetails" boolean NOT NULL DEFAULT false,
-//   "DriverWillNotTalkPolitics" boolean NOT NULL DEFAULT false,
-//   "ReadyToMatch" boolean NOT NULL DEFAULT false,
-
-              // false
-              payload.PleaseStayInTouch
-//   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
-            ]
+        // + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
+        + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
+        + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)', //-- $26
+        // values: 
+        [
+          // '2016-09-01T00:00:00.000Z'
+          // timestampValue.toString(), '0.0.0.0', '60002', 20, 'after 10am'
+          // timestampValue.toString(), 
+          payload.IPAddress, payload.DriverCollectionZIP, payload.DriverCollectionRadius, payload.AvailableDriveTimesJSON
+          , 
+          //   "TimeStamp" timestamp without time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+          //   "IPAddress" character varying(20),
+          //   "DriverCollectionZIP" character varying(5) NOT NULL,
+          //   "DriverCollectionRadius" integer NOT NULL,
+          //   "AvailableDriveTimesJSON" character varying(2000),
+          // false, 2, false, 'ill. ins', '1234'
+          payload.DriverCanLoadRiderWithWheelchair, payload.SeatCount, payload.DriverHasInsurance, payload.DriverInsuranceProviderName, payload.DriverInsurancePolicyNumber
+          , 
+          //   "DriverCanLoadRiderWithWheelchair" boolean NOT NULL DEFAULT false,
+          //   "SeatCount" integer DEFAULT 1,
+          //   "DriverHasInsurance" boolean NOT NULL DEFAULT false,
+          //   "DriverInsuranceProviderName" character varying(255),
+          //   "DriverInsurancePolicyNumber" character varying(50),
+          // 'IL', '1234', 'fred', 'smith', false
+          payload.DriverLicenseState, payload.DriverLicenseNumber, payload.DriverFirstName, payload.DriverLastName, payload.PermissionCanRunBackgroundCheck
+          ,
+          //   "DriverLicenseState" character(2),
+          //   "DriverLicenseNumber" character varying(50),
+          //   "DriverFirstName" character varying(255) NOT NULL,
+          //   "DriverLastName" character varying(255) NOT NULL,
+          //   "PermissionCanRunBackgroundCheck" boolean NOT NULL DEFAULT false,
+          // 'f@gmail.xxx', '555-123-4567', 555, false, false
+          payload.DriverEmail, payload.DriverPhone, payload.DriverAreaCode, payload.DriverEmailValidated, payload.DriverPhoneValidated
+          , 
+          //   "DriverEmail" character varying(255),
+          //   "DriverPhone" character varying(20),
+          //   "DriverAreaCode" integer,
+          //   "DriverEmailValidated" boolean NOT NULL DEFAULT false,
+          //   "DriverPhoneValidated" boolean NOT NULL DEFAULT false,
+          // false, 'misc', false, false, false
+          payload.DrivingOnBehalfOfOrganization, payload.DrivingOBOOrganizationName, payload.RidersCanSeeDriverDetails, payload.DriverWillNotTalkPolitics, payload.ReadyToMatch
+          , 
+          //   "DrivingOnBehalfOfOrganization" boolean NOT NULL DEFAULT false,
+          //   "DrivingOBOOrganizationName" character varying(255),
+          //   "RidersCanSeeDriverDetails" boolean NOT NULL DEFAULT false,
+          //   "DriverWillNotTalkPolitics" boolean NOT NULL DEFAULT false,
+          //   "ReadyToMatch" boolean NOT NULL DEFAULT false,
+          // false
+          payload.PleaseStayInTouch
+          //   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
+        ]
 
 //  DriverID: 2,
 //   Name: 'John Smith',
@@ -199,39 +173,37 @@ server.route({
 //   ModifiedBy: 'SYSTEM'
 
 // }
-  )
-  .then(result => {
-    if (result !== undefined) {
-      console.log('insert: ', result)
-    }
-    else {
-      console.error('insert made')
-    }
-  })
-  .catch(e => {
-    if (e !== undefined && e.message !== undefined && e.stack !== undefined) {
-      console.error('query error', e.message, e.stack)
-    }
-    else {
-      console.error('query error.')
-    }
-  })
-  ;
+    )
+    .then(result => {
+      if (result !== undefined) {
+        console.log('insert: ', result)
+      }
+      else {
+        console.error('insert made')
+      }
+    })
+    .catch(e => {
+      if (e !== undefined && e.message !== undefined && e.stack !== undefined) {
+        console.error('query error', e.message, e.stack)
+      }
+      else {
+        console.error('query error.')
+      }
+    });
 
     reply('row inserted');
   }
 });
 
-server.start((err) => {
+server.start(err => {
+  if (err) {
+      throw err;
+  }
 
-    if (err) {
-        throw err;
-    }
-    console.log(`Server running at: ${server.info.uri}`);
+  console.log(`Server running at: ${server.info.uri}`);
 });
 
 pool.on('error', (err, client) => {
-
   if (err) {
     console.error("db err" + err);
   } 
