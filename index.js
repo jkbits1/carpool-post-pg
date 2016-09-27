@@ -146,42 +146,6 @@ function dbGetInsertDriverString() {
     + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)' //-- $26
 }
 
-// CREATE TABLE "STAGE"."WEBSUBMISSION_RIDER"
-// (
-//   "CreatedTimeStamp" timestamp without time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-//   "IPAddress" character varying(20),
-//   "RiderFirstName" character varying(255) NOT NULL,
-//   "RiderLastName" character varying(255) NOT NULL,
-//   "RiderEmail" character varying(255),
-//   "RiderPhone" character varying(20),
-//   "RiderAreaCode" integer,
-//   "RiderEmailValidated" boolean NOT NULL DEFAULT false,
-//   "RiderPhoneValidated" boolean NOT NULL DEFAULT false,
-//   "RiderVotingState" character(2) NOT NULL,
-//   "RiderCollectionZIP" character varying(5) NOT NULL,
-//   "RiderDropOffZIP" character varying(5) NOT NULL,
-//   "AvailableRideTimesJSON" character varying(2000),
-//   "WheelchairCount" integer,
-//   "NonWheelchairCount" integer,
-//   "TotalPartySize" integer,
-//   "TwoWayTripNeeded" boolean NOT NULL DEFAULT false,
-//   "RiderPreferredContactMethod" integer,
-//   "RiderIsVulnerable" boolean NOT NULL DEFAULT false,
-//   "DriverCanContactRider" boolean NOT NULL DEFAULT false,
-//   "RiderWillNotTalkPolitics" boolean NOT NULL DEFAULT false,
-//   "ReadyToMatch" boolean NOT NULL DEFAULT false,
-//   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
-// )
-// WITH (
-//   OIDS=FALSE
-// );
-// ALTER TABLE "STAGE"."WEBSUBMISSION_RIDER"
-//   OWNER TO carpool_admins;
-// GRANT ALL ON TABLE "STAGE"."WEBSUBMISSION_RIDER" TO carpool_admins;
-// GRANT INSERT ON TABLE "STAGE"."WEBSUBMISSION_RIDER" TO carpool_web_role;
-// GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE "STAGE"."WEBSUBMISSION_RIDER" TO carpool_role;
-
-
 function dbGetInsertRiderString() {
   return dbGetInsertClause(RIDER_TABLE)
     + ' (' // "CreatedTimeStamp",    
