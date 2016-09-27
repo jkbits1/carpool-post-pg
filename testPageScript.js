@@ -1,9 +1,7 @@
 
 
 function sendForm() {
-
-  var formData = new FormData();
-
+  var formData  = new FormData();
   var remoteUrl = "http://localhost:8000/driver";
 
   formData.append("IPAddress", "0.0.0.1");
@@ -37,17 +35,8 @@ function sendForm() {
 
   formData.append("PleaseStayInTouch", true);
 
-
-  // HTML file input, chosen by user
-  // formData.append("userfile", fileInputElement.files[0]);
-
-  // JavaScript file-like object
-  // var content = '<a id="a"><b id="b">hey!</b></a>'; // the body of the new file...
-  // var blob = new Blob([content], { type: "text/xml"});
-
-  // formData.append("webmasterfile", blob);
-
   var request = new XMLHttpRequest();
+
   request.open("POST", remoteUrl);
   request.send(formData);
 }

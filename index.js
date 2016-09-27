@@ -14,6 +14,9 @@ const SCHEMA_NAME   = '"STAGE"';
 const DRIVER_TABLE  = '"WEBSUBMISSION_DRIVER"';
 const RIDER_TABLE   = '"WEBSUBMISSION_RIDER"';
 
+const DRIVER_ROUTE  = 'driver';
+const RIDER_ROUTE  = 'rider';
+
 var appPort = DEFAULT_PORT;
 
 server.connection({ 
@@ -25,18 +28,24 @@ server.connection({
 
 var rowId = 8;
 
+function dbGetQueryString () {
+  return 'SELECT * FROM ' + SCHEMA_NAME + '.' + DRIVER_TABLE;
+}
+
+function dbGetInsertString (tableName) {
+  return 'INSERT INTO ' + SCHEMA_NAME + '.' + tableName;
+}
+
 server.route({
   method: 'GET',
   path: '/',
   handler: (req, reply) => {
 
-    console.log(req.payload);
-
-    pool.query('SELECT * FROM ' + SCHEMA_NAME + '.' + DRIVER_TABLE, (err, result) => {
+    pool.query(dbGetQueryString(), (err, result) => {
       var rowsAsString = "";
 
       if (err) {
-        return reply("error:" + err);
+        return reply("error: " + err);
       }
 
       if (result !== undefined && result.rows !== undefined) {
@@ -52,15 +61,34 @@ server.route({
 
 server.route({
   method: 'POST',
-  path: '/driver',
+  path: '/' + DRIVER_ROUTE,
   handler: (req, reply) => {
-
     var payload = req.payload;
 
-    console.log(payload);
-
+    console.log("payload: " + payload);
     console.log("zip: " + payload.DriverCollectionZIP);
-    
+
+    insertData(payload, pool);   
+
+    reply('row inserted');
+  }
+});
+
+server.start(err => {
+  if (err) {
+      throw err;
+  }
+
+  console.log(`Server running at: ${server.info.uri}`);
+});
+
+pool.on('error', (err, client) => {
+  if (err) {
+    console.error("db err" + err);
+  } 
+});
+
+function insertData(payload, pool) {
 
 //     'INSERT INTO "NOV2016"."DRIVER"(Name, Phone, Email, EmailValidated, RideDate, RideTimeStart, RideTimeEnd, State, City, Origin, RiderDestination, Capability, Seats, DriverHasInsurance, Notes, Active, CreatedTimestamp, CreatedBy, ModifiedTimestamp, ModifiedBy) 
 // values('George', '602-481-6000', 'testing2@ericanderson.com', '0', '2016-09-01T00:00:00.000Z', '12:00:00+00', '13:00:00+00', 'IL', 'CHICAGO', 'THE L2', 'THE POLLS', 'TBD', 4, '1',
@@ -88,67 +116,67 @@ server.route({
     //          'Notes on driver', '1', '2016-09-21T00:48:32.055Z', 'SYSTEM', '2016-09-21T00:48:32.055Z', 'SYSTEM']
 
     // text: 
-      'INSERT INTO ' + SCHEMA_NAME + '.' + DRIVER_TABLE
-        + ' (' // "TimeStamp",  
-        + '  "IPAddress", "DriverCollectionZIP", "DriverCollectionRadius", "AvailableDriveTimesJSON"' 
-        + ', "DriverCanLoadRiderWithWheelchair", "SeatCount", "DriverHasInsurance", "DriverInsuranceProviderName", "DriverInsurancePolicyNumber"'
-        + ', "DriverLicenseState", "DriverLicenseNumber", "DriverFirstName", "DriverLastName", "PermissionCanRunBackgroundCheck"'
-        + ', "DriverEmail", "DriverPhone", "DriverAreaCode", "DriverEmailValidated", "DriverPhoneValidated"'
-        + ', "DrivingOnBehalfOfOrganization", "DrivingOBOOrganizationName", "RidersCanSeeDriverDetails", "DriverWillNotTalkPolitics", "ReadyToMatch"'
-        + ', "PleaseStayInTouch"'  
-        + ')'
+      dbGetInsertString(DRIVER_TABLE)
+      + ' (' // "TimeStamp",  
+      + '  "IPAddress", "DriverCollectionZIP", "DriverCollectionRadius", "AvailableDriveTimesJSON"' 
+      + ', "DriverCanLoadRiderWithWheelchair", "SeatCount", "DriverHasInsurance", "DriverInsuranceProviderName", "DriverInsurancePolicyNumber"'
+      + ', "DriverLicenseState", "DriverLicenseNumber", "DriverFirstName", "DriverLastName", "PermissionCanRunBackgroundCheck"'
+      + ', "DriverEmail", "DriverPhone", "DriverAreaCode", "DriverEmailValidated", "DriverPhoneValidated"'
+      + ', "DrivingOnBehalfOfOrganization", "DrivingOBOOrganizationName", "RidersCanSeeDriverDetails", "DriverWillNotTalkPolitics", "ReadyToMatch"'
+      + ', "PleaseStayInTouch"'  
+      + ')'
 
-        // + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
-        + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
-        + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)', //-- $26
-        // values: 
-        [
-          // '2016-09-01T00:00:00.000Z'
-          // timestampValue.toString(), '0.0.0.0', '60002', 20, 'after 10am'
-          // timestampValue.toString(), 
-          payload.IPAddress, payload.DriverCollectionZIP, payload.DriverCollectionRadius, payload.AvailableDriveTimesJSON
-          , 
-          //   "TimeStamp" timestamp without time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-          //   "IPAddress" character varying(20),
-          //   "DriverCollectionZIP" character varying(5) NOT NULL,
-          //   "DriverCollectionRadius" integer NOT NULL,
-          //   "AvailableDriveTimesJSON" character varying(2000),
-          // false, 2, false, 'ill. ins', '1234'
-          payload.DriverCanLoadRiderWithWheelchair, payload.SeatCount, payload.DriverHasInsurance, payload.DriverInsuranceProviderName, payload.DriverInsurancePolicyNumber
-          , 
-          //   "DriverCanLoadRiderWithWheelchair" boolean NOT NULL DEFAULT false,
-          //   "SeatCount" integer DEFAULT 1,
-          //   "DriverHasInsurance" boolean NOT NULL DEFAULT false,
-          //   "DriverInsuranceProviderName" character varying(255),
-          //   "DriverInsurancePolicyNumber" character varying(50),
-          // 'IL', '1234', 'fred', 'smith', false
-          payload.DriverLicenseState, payload.DriverLicenseNumber, payload.DriverFirstName, payload.DriverLastName, payload.PermissionCanRunBackgroundCheck
-          ,
-          //   "DriverLicenseState" character(2),
-          //   "DriverLicenseNumber" character varying(50),
-          //   "DriverFirstName" character varying(255) NOT NULL,
-          //   "DriverLastName" character varying(255) NOT NULL,
-          //   "PermissionCanRunBackgroundCheck" boolean NOT NULL DEFAULT false,
-          // 'f@gmail.xxx', '555-123-4567', 555, false, false
-          payload.DriverEmail, payload.DriverPhone, payload.DriverAreaCode, payload.DriverEmailValidated, payload.DriverPhoneValidated
-          , 
-          //   "DriverEmail" character varying(255),
-          //   "DriverPhone" character varying(20),
-          //   "DriverAreaCode" integer,
-          //   "DriverEmailValidated" boolean NOT NULL DEFAULT false,
-          //   "DriverPhoneValidated" boolean NOT NULL DEFAULT false,
-          // false, 'misc', false, false, false
-          payload.DrivingOnBehalfOfOrganization, payload.DrivingOBOOrganizationName, payload.RidersCanSeeDriverDetails, payload.DriverWillNotTalkPolitics, payload.ReadyToMatch
-          , 
-          //   "DrivingOnBehalfOfOrganization" boolean NOT NULL DEFAULT false,
-          //   "DrivingOBOOrganizationName" character varying(255),
-          //   "RidersCanSeeDriverDetails" boolean NOT NULL DEFAULT false,
-          //   "DriverWillNotTalkPolitics" boolean NOT NULL DEFAULT false,
-          //   "ReadyToMatch" boolean NOT NULL DEFAULT false,
-          // false
-          payload.PleaseStayInTouch
-          //   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
-        ]
+      // + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
+      + ' values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ' 
+      + '        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)', //-- $26
+      // values: 
+      [
+        // '2016-09-01T00:00:00.000Z'
+        // timestampValue.toString(), '0.0.0.0', '60002', 20, 'after 10am'
+        // timestampValue.toString(), 
+        payload.IPAddress, payload.DriverCollectionZIP, payload.DriverCollectionRadius, payload.AvailableDriveTimesJSON
+        , 
+        //   "TimeStamp" timestamp without time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+        //   "IPAddress" character varying(20),
+        //   "DriverCollectionZIP" character varying(5) NOT NULL,
+        //   "DriverCollectionRadius" integer NOT NULL,
+        //   "AvailableDriveTimesJSON" character varying(2000),
+        // false, 2, false, 'ill. ins', '1234'
+        payload.DriverCanLoadRiderWithWheelchair, payload.SeatCount, payload.DriverHasInsurance, payload.DriverInsuranceProviderName, payload.DriverInsurancePolicyNumber
+        , 
+        //   "DriverCanLoadRiderWithWheelchair" boolean NOT NULL DEFAULT false,
+        //   "SeatCount" integer DEFAULT 1,
+        //   "DriverHasInsurance" boolean NOT NULL DEFAULT false,
+        //   "DriverInsuranceProviderName" character varying(255),
+        //   "DriverInsurancePolicyNumber" character varying(50),
+        // 'IL', '1234', 'fred', 'smith', false
+        payload.DriverLicenseState, payload.DriverLicenseNumber, payload.DriverFirstName, payload.DriverLastName, payload.PermissionCanRunBackgroundCheck
+        ,
+        //   "DriverLicenseState" character(2),
+        //   "DriverLicenseNumber" character varying(50),
+        //   "DriverFirstName" character varying(255) NOT NULL,
+        //   "DriverLastName" character varying(255) NOT NULL,
+        //   "PermissionCanRunBackgroundCheck" boolean NOT NULL DEFAULT false,
+        // 'f@gmail.xxx', '555-123-4567', 555, false, false
+        payload.DriverEmail, payload.DriverPhone, payload.DriverAreaCode, payload.DriverEmailValidated, payload.DriverPhoneValidated
+        , 
+        //   "DriverEmail" character varying(255),
+        //   "DriverPhone" character varying(20),
+        //   "DriverAreaCode" integer,
+        //   "DriverEmailValidated" boolean NOT NULL DEFAULT false,
+        //   "DriverPhoneValidated" boolean NOT NULL DEFAULT false,
+        // false, 'misc', false, false, false
+        payload.DrivingOnBehalfOfOrganization, payload.DrivingOBOOrganizationName, payload.RidersCanSeeDriverDetails, payload.DriverWillNotTalkPolitics, payload.ReadyToMatch
+        , 
+        //   "DrivingOnBehalfOfOrganization" boolean NOT NULL DEFAULT false,
+        //   "DrivingOBOOrganizationName" character varying(255),
+        //   "RidersCanSeeDriverDetails" boolean NOT NULL DEFAULT false,
+        //   "DriverWillNotTalkPolitics" boolean NOT NULL DEFAULT false,
+        //   "ReadyToMatch" boolean NOT NULL DEFAULT false,
+        // false
+        payload.PleaseStayInTouch
+        //   "PleaseStayInTouch" boolean NOT NULL DEFAULT false
+      ]
 
 //  DriverID: 2,
 //   Name: 'John Smith',
@@ -190,24 +218,7 @@ server.route({
         console.error('query error.')
       }
     });
-
-    reply('row inserted');
-  }
-});
-
-server.start(err => {
-  if (err) {
-      throw err;
-  }
-
-  console.log(`Server running at: ${server.info.uri}`);
-});
-
-pool.on('error', (err, client) => {
-  if (err) {
-    console.error("db err" + err);
-  } 
-});
+}
 
 
 // CREATE TABLE "STAGE"."WEBSUBMISSION_DRIVER"
