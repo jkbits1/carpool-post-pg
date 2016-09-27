@@ -13,3 +13,11 @@ Use testPage.html (and linked testPageScript.js) to test app
       http://ip-address/rider
 
       (change ip-address depending on app location)
+
+ENV VARS REQUIRED:
+
+export PGHOST=ip
+export PGUSER=username
+export PGDATABASE=dbname
+export PGPASSWORD=pwd
+export PGPORT=5432

@@ -6,6 +6,12 @@ var   Pool    = require('pg').Pool;
 
 const config  = require('./dbInfo.js');
 
+config.user       = process.env.PGUSER;
+config.database   = process.env.PGDATABASE;
+config.password   = process.env.PGPASSWORD;
+config.host       = process.env.PGHOST;
+config.port       = process.env.PGPORT;
+
 const pool = new Pool(config);
 const server = new Hapi.Server();
 
